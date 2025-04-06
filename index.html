@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Réservation Coiffure</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function(){
+      emailjs.init("TON_USER_ID");
+    })();
+
+    function calculerPrix() {
+      const coupe = parseFloat(document.getElementById("coupe").value);
+      const enfant = document.getElementById("enfant").checked;
+      const barbe = parseFloat(document.getElementById("barbe").value);
+      const extra = parseFloat(document.getElementById("extra").value);
+      const domicile = document.getElementById("domicile").checked;
+      const dateRDV = new Date(document.getElementById("dateRDV").value);
+      const aujourdhui = new Date();
+      const diffJours = Math.ceil((dateRDV - aujourdhui) / (1000 * 60 * 60 * 24));
+
+      let prix = (enfant ? 15 : coupe) + barbe + extra + (domicile ? 10 : 0);
+      
+      // Réduction selon le délai de réservation
+      if (diffJours <= 3) prix *= 0.8;
+      else if (diffJours <= 7) prix *= 0.9;
+
+      document.getElementById("prixTotal").innerText = `Prix total estimé: ${prix.toFixed(2)}$`;
+    }
+
+    function envoyerEmail(event) {
+      event.preventDefault();
+      const form = document.getElementById("bookingForm");
+      const prix = document.getElementById("prixTotal").innerText;
+
+      const templateParams = {
+        email: document.getElementById("email").value,
+        nom: document.getElementById("nom").value,
+        telephone: document.getElementById("telephone").value,
+        coupe: document.getElementById("coupe").options[document.getElementById("coupe").selectedIndex].text,
+        enfant: document.getElementById("enfant").checked ? "Oui" : "Non",
+        barbe: document.getElementById("barbe").options[document.getElementById("barbe").selectedIndex].text,
+        extra: document.getElementById("extra").options[document.getElementById("extra").selectedIndex].text,
+        domicile: document.getElementById("domicile").checked ? "Oui" : "Non",
+        dateRDV: document.getElementById("dateRDV").value,
+        heureRDV: document.getElementById("heureRDV").value,
+        commentaires: document.getElementById("commentaires").value,
+        prixTotal: prix
+      };
+
+      emailjs.send("TON_SERVICE_ID", "TON_TEMPLATE_ID", templateParams)
+        .then(() => {
+          alert("Réservation envoyée avec succès !");
+          form.reset();
+          document.getElementById("prixTotal").innerText = "Prix total estimé: 0$";
+        }, (error) => {
+          alert("Erreur lors de l'envoi: " + JSON.stringify(error));
+        });
+    }
+
+    function setMinMaxHours() {
+      const heureSelect = document.getElementById("heureRDV");
+      heureSelect.innerHTML = '';
+      
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "-- Choisir une heure --";
+      heureSelect.appendChild(defaultOption);
+      
+      for (let hour = 8; hour <= 16; hour++) {
+        const option = document.createElement("option");
+        option.value = `${hour.toString().padStart(2, '0')}:00`;
+        option.textContent = `${hour.toString().padStart(2, '0')}h00`;
+        heureSelect.appendChild(option);
+      }
+    }
+
+    window.onload = setMinMaxHours;
+  </script>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
+    <img src="https://images.unsplash.com/photo-1592841601624-7e06ee3ff2a8" alt="Coiffure" class="rounded mb-6 w-full h-64 object-cover">
+    <h1 class="text-2xl font-bold mb-4 text-center">Réservez votre coupe</h1>
+    <form id="bookingForm" oninput="calculerPrix()" onsubmit="envoyerEmail(event)">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block mb-2">Votre nom:</label>
+          <input type="text" id="nom" name="nom" required class="w-full p-2 border rounded" placeholder="Votre nom">
+        </div>
+        <div>
+          <label class="block mb-2">Votre email:</label>
+          <input type="email" id="email" name="email" required class="w-full p-2 border rounded" placeholder="exemple@mail.com">
+        </div>
+        <div>
+          <label class="block mb-2">Téléphone:</label>
+          <input type="tel" id="telephone" name="telephone" required class="w-full p-2 border rounded" placeholder="123-456-7890">
+        </div>
+      </div>
+
+      <label class="block mb-2">Type de coupe:</label>
+      <select id="coupe" class="w-full mb-4 p-2 border rounded">
+        <option value="20">Buzz cut - 20$</option>
+        <option value="25">Dégradé - 25$</option>
+        <option value="20">Coupe simple - 20$</option>
+        <option value="20">Taper - 20$</option>
+      </select>
+
+      <label class="flex items-center mb-4">
+        <input type="checkbox" id="enfant" class="mr-2"> Coupe enfant (15$)
+      </label>
+
+      <label class="block mb-2">Barbe:</label>
+      <select id="barbe" class="w-full mb-4 p-2 border rounded">
+        <option value="0">Aucune</option>
+        <option value="5">Barbe simple - 5$</option>
+        <option value="10">Dégradé de barbe - 10$</option>
+      </select>
+
+      <label class="block mb-2">Service supplémentaire:</label>
+      <select id="extra" class="w-full mb-4 p-2 border rounded">
+        <option value="0">Aucun</option>
+        <option value="25">Coloration des cheveux - 25$</option>
+        <option value="15">Soin du cuir chevelu - 15$</option>
+        <option value="10">Modelage facial - 10$</option>
+        <option value="20">Pose de produit - 20$</option>
+      </select>
+
+      <label class="flex items-center mb-4">
+        <input type="checkbox" id="domicile" class="mr-2"> Service à domicile (+10$)
+      </label>
+
+      <label class="block mb-2">Date du rendez-vous:</label>
+      <input type="date" id="dateRDV" class="w-full mb-4 p-2 border rounded">
+
+      <label class="block mb-2">Heure du rendez-vous:</label>
+      <select id="heureRDV" class="w-full mb-4 p-2 border rounded" required>
+        <!-- Les options sont générées par JavaScript -->
+      </select>
+
+      <label class="block mb-2">Commentaires ou demandes spéciales:</label>
+      <textarea id="commentaires" class="w-full mb-4 p-2 border rounded" rows="3" placeholder="Vos commentaires..."></textarea>
+
+      <p id="prixTotal" class="text-lg font-semibold mb-4">Prix total estimé: 0$</p>
+
+      <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded font-bold">Confirmer la réservation</button>
+    </form>
+  </div>
+</body>
+</html>
